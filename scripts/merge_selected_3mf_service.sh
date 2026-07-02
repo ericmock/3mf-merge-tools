@@ -2,7 +2,13 @@
 set -euo pipefail
 
 APP_NAME="3MF Merge Tools"
-INSTALL_DIR="${INSTALL_DIR:-"$HOME/.local/share/3mf-merge-tools"}"
+if [ "${INSTALL_DIR:-}" ]; then
+    INSTALL_DIR="$INSTALL_DIR"
+elif [ -f "$HOME/.local/share/3mf-merge-tools/scripts/merge_bambu_3mf.py" ]; then
+    INSTALL_DIR="$HOME/.local/share/3mf-merge-tools"
+else
+    INSTALL_DIR="/Library/Application Support/3mf-merge-tools"
+fi
 MERGE_SCRIPT="$INSTALL_DIR/scripts/merge_bambu_3mf.py"
 PYTHON_BIN="${PYTHON:-python3}"
 

@@ -60,6 +60,32 @@ To remove the Finder Quick Action:
 
 ./uninstall_finder_service.sh
 
+Mac Installer Package
+---------------------
+
+To build a double-clickable macOS installer package:
+
+./build_macos_pkg.sh
+
+The package is written to:
+
+dist/3mf-merge-tools-0.1.0.pkg
+
+The package installs:
+
+/Library/Application Support/3mf-merge-tools/scripts
+/usr/local/bin/3mf-merge
+/usr/local/bin/3mf-inspect-plates
+/Library/Services/Merge 3MF Build Plates.workflow
+
+This makes the command-line tools and the Finder Quick Action available
+system-wide. The postinstall script refreshes the Services menu and updates the
+Finder action to use the current system's .3mf content type.
+
+To remove a package install:
+
+sudo ./uninstall_macos_pkg.sh
+
 Important Notes
 ---------------
 
