@@ -4,6 +4,13 @@ set -euo pipefail
 SERVICE_NAME="Merge 3MF Build Plates"
 SERVICE_DIR="$HOME/Library/Services/$SERVICE_NAME.workflow"
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+TMP_3MF=$(mktemp "${TMPDIR:-/tmp}/3mf-merge-tools-uti.XXXXXX.3mf")
+THREEMF_UTI=$(mdls -raw -name kMDItemContentType "$TMP_3MF" 2>/dev/null || true)
+rm -f "$TMP_3MF"
+
+if [ -z "$THREEMF_UTI" ] || [ "$THREEMF_UTI" = "(null)" ]; then
+    THREEMF_UTI="com.hildahandcraft.3mf"
+fi
 
 "$SCRIPT_DIR/install.sh"
 
@@ -35,13 +42,22 @@ cat > "$SERVICE_DIR/Contents/Info.plist" <<'PLIST'
 			</dict>
 			<key>NSSendFileTypes</key>
 			<array>
-				<string>public.item</string>
+				<string>__THREEMF_UTI__</string>
 			</array>
 		</dict>
 	</array>
 </dict>
 </plist>
 PLIST
+
+/usr/bin/python3 - "$SERVICE_DIR/Contents/Info.plist" "$THREEMF_UTI" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+uti = sys.argv[2]
+path.write_text(path.read_text().replace("__THREEMF_UTI__", uti))
+PY
 
 cat > "$SERVICE_DIR/Contents/document.wflow" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>

@@ -52,6 +52,10 @@ After installing it, select two or more .3mf files in Finder, Control-click,
 then choose Quick Actions > Merge 3MF Build Plates. The action asks where to
 save the merged 3MF, runs the merge, and reveals the output file in Finder.
 
+The Quick Action registers with Finder for the current system's .3mf content
+type, so it should appear in the Finder contextual menu when all selected files
+are .3mf files. The wrapper still validates the selection before merging.
+
 To remove the Finder Quick Action:
 
 ./uninstall_finder_service.sh
