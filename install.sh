@@ -45,7 +45,10 @@ mkdir -p "$INSTALL_DIR/scripts" "$BIN_DIR"
 
 cp "$SCRIPT_DIR/scripts/merge_bambu_3mf.py" "$INSTALL_DIR/scripts/merge_bambu_3mf.py"
 cp "$SCRIPT_DIR/scripts/inspect_3mf_plates.py" "$INSTALL_DIR/scripts/inspect_3mf_plates.py"
-chmod 755 "$INSTALL_DIR/scripts/merge_bambu_3mf.py" "$INSTALL_DIR/scripts/inspect_3mf_plates.py"
+if [ -f "$SCRIPT_DIR/scripts/merge_selected_3mf_service.sh" ]; then
+    cp "$SCRIPT_DIR/scripts/merge_selected_3mf_service.sh" "$INSTALL_DIR/scripts/merge_selected_3mf_service.sh"
+fi
+chmod 755 "$INSTALL_DIR/scripts/"*
 
 cat > "$BIN_DIR/3mf-merge" <<EOF
 #!/usr/bin/env sh

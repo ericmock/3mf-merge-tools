@@ -41,6 +41,21 @@ To remove the installed commands and copied scripts:
 
 ./uninstall.sh
 
+Finder Quick Action
+-------------------
+
+To install a macOS Finder Quick Action for selected 3MF files:
+
+./install_finder_service.sh
+
+After installing it, select two or more .3mf files in Finder, Control-click,
+then choose Quick Actions > Merge 3MF Build Plates. The action asks where to
+save the merged 3MF, runs the merge, and reveals the output file in Finder.
+
+To remove the Finder Quick Action:
+
+./uninstall_finder_service.sh
+
 Important Notes
 ---------------
 
