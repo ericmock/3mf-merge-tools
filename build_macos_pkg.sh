@@ -169,15 +169,25 @@ cat > "$SCRIPTS_DIR/postinstall" <<'EOF'
 set -euo pipefail
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-tar -xzf "$SCRIPT_DIR/payload.tar.gz" -C /
-chmod 755 \
-    /usr/local/bin/3mf-merge \
-    /usr/local/bin/3mf-inspect-plates \
-    "/Library/Application Support/3mf-merge-tools/scripts/merge_bambu_3mf.py" \
-    "/Library/Application Support/3mf-merge-tools/scripts/inspect_3mf_plates.py" \
-    "/Library/Application Support/3mf-merge-tools/scripts/merge_selected_3mf_service.sh"
+TARGET_VOLUME="${3:-/}"
+target_path() {
+    local relative_path="${1#/}"
+    if [ "$TARGET_VOLUME" = "/" ]; then
+        printf '/%s\n' "$relative_path"
+    else
+        printf '%s/%s\n' "${TARGET_VOLUME%/}" "$relative_path"
+    fi
+}
 
-INFO="/Library/Services/Merge 3MF Build Plates.workflow/Contents/Info.plist"
+tar -xzmf "$SCRIPT_DIR/payload.tar.gz" -C "$TARGET_VOLUME"
+chmod 755 \
+    "$(target_path /usr/local/bin/3mf-merge)" \
+    "$(target_path /usr/local/bin/3mf-inspect-plates)" \
+    "$(target_path "/Library/Application Support/3mf-merge-tools/scripts/merge_bambu_3mf.py")" \
+    "$(target_path "/Library/Application Support/3mf-merge-tools/scripts/inspect_3mf_plates.py")" \
+    "$(target_path "/Library/Application Support/3mf-merge-tools/scripts/merge_selected_3mf_service.sh")"
+
+INFO="$(target_path "/Library/Services/Merge 3MF Build Plates.workflow/Contents/Info.plist")"
 TMP_3MF=$(mktemp "${TMPDIR:-/tmp}/3mf-merge-tools-uti.XXXXXX.3mf")
 THREEMF_UTI=$(mdls -raw -name kMDItemContentType "$TMP_3MF" 2>/dev/null || true)
 rm -f "$TMP_3MF"
@@ -190,7 +200,7 @@ if [ -f "$INFO" ]; then
     plutil -replace NSServices.0.NSSendFileTypes -json "[\"$THREEMF_UTI\"]" "$INFO" || true
 fi
 
-if [ -x /System/Library/CoreServices/pbs ]; then
+if [ "$TARGET_VOLUME" = "/" ] && [ -x /System/Library/CoreServices/pbs ]; then
     /System/Library/CoreServices/pbs -update || true
 fi
 
