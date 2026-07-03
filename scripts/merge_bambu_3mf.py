@@ -19,8 +19,10 @@ from pathlib import Path, PurePosixPath
 import shutil
 import sys
 import tempfile
+import time
 import uuid
 import zipfile
+from contextlib import contextmanager
 import xml.etree.ElementTree as ET
 
 
@@ -29,6 +31,8 @@ BAMBU_NS = "http://schemas.bambulab.com/package/2021"
 PROD_NS = "http://schemas.microsoft.com/3dmanufacturing/production/2015/06"
 RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 SLICER_MAX_PLATES = 36
+ZIP_OPEN_RETRIES = 5
+ZIP_OPEN_RETRY_DELAY_SECONDS = 0.75
 
 ET.register_namespace("", CORE_NS)
 ET.register_namespace("BambuStudio", BAMBU_NS)
@@ -73,6 +77,26 @@ def list_3mf_files(cwd: Path, output: Path) -> list[Path]:
     files.extend(Path(p) for p in glob.glob(str(cwd / "*.3MF")))
     unique = sorted({p.resolve() for p in files})
     return [p for p in unique if p != output.resolve()]
+
+
+@contextmanager
+def open_source_zip(source: Path):
+    last_exc: zipfile.BadZipFile | None = None
+    for attempt in range(1, ZIP_OPEN_RETRIES + 1):
+        try:
+            with zipfile.ZipFile(source, "r") as zf:
+                yield zf
+                return
+        except zipfile.BadZipFile as exc:
+            last_exc = exc
+            if attempt < ZIP_OPEN_RETRIES:
+                time.sleep(ZIP_OPEN_RETRY_DELAY_SECONDS)
+
+    raise RuntimeError(
+        f"source file is not a valid 3MF/ZIP archive after {ZIP_OPEN_RETRIES} attempts: {source}\n"
+        "If this file is stored in iCloud, Dropbox, or another cloud-backed folder, download it locally "
+        "and try again."
+    ) from last_exc
 
 
 def compute_column_count(count: int) -> int:
@@ -379,7 +403,7 @@ def main() -> int:
     source_plate_counts: dict[Path, int] = {}
     total_input_plates = 0
     for source in sources:
-        with zipfile.ZipFile(source, "r") as zf:
+        with open_source_zip(source) as zf:
             settings_root = parse_xml(zip_read_required(zf, "Metadata/model_settings.config", source))
             plate_count = len(settings_root.findall("plate"))
             source_plate_counts[source] = plate_count
@@ -397,7 +421,7 @@ def main() -> int:
 
     try:
         first = sources[0]
-        with zipfile.ZipFile(first, "r") as first_zip:
+        with open_source_zip(first) as first_zip:
             first_names = set(first_zip.namelist())
             output_project_settings = json.loads(
                 zip_read_required(first_zip, "Metadata/project_settings.config", first)
@@ -444,7 +468,7 @@ def main() -> int:
         summary_rows: list[tuple[str, int, list[str]]] = []
 
         for source_index, source in enumerate(sources, start=1):
-            with zipfile.ZipFile(source, "r") as zf:
+            with open_source_zip(source) as zf:
                 zip_names = set(zf.namelist())
                 model_root = parse_xml(zip_read_required(zf, "3D/3dmodel.model", source))
                 source_resources, source_build = model_children(model_root)

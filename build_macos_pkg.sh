@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${VERSION:-0.1.1}"
+VERSION="${VERSION:-0.1.2}"
 IDENTIFIER="${IDENTIFIER:-com.ericmock.3mf-merge-tools}"
 PACKAGE_NAME="3mf-merge-tools-${VERSION}.pkg"
 BUILD_ROOT="${BUILD_ROOT:-/tmp/3mf-merge-tools-pkg-build}"

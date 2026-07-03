@@ -78,7 +78,14 @@ tmp_parent="${TMPDIR:-/tmp}"
 tmp_parent="${tmp_parent%/}"
 log_file=$(mktemp "$tmp_parent/3mf-merge-service.XXXXXX")
 
-if "$PYTHON_BIN" "$MERGE_SCRIPT" "${inputs[@]}" -o "$output_path" >"$log_file" 2>&1; then
+if {
+    echo "Selected input files:"
+    printf ' - %s\n' "${inputs[@]}"
+    echo "Output file:"
+    printf ' - %s\n' "$output_path"
+    echo
+    "$PYTHON_BIN" "$MERGE_SCRIPT" "${inputs[@]}" -o "$output_path"
+} >"$log_file" 2>&1; then
     /usr/bin/open -R "$output_path" >/dev/null 2>&1 || true
     notify "Merged ${#inputs[@]} files."
     exit 0
