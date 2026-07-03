@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${VERSION:-0.1.0}"
+VERSION="${VERSION:-0.1.1}"
 IDENTIFIER="${IDENTIFIER:-com.ericmock.3mf-merge-tools}"
 PACKAGE_NAME="3mf-merge-tools-${VERSION}.pkg"
 BUILD_ROOT="${BUILD_ROOT:-/tmp/3mf-merge-tools-pkg-build}"
@@ -207,7 +207,11 @@ install -m 644 \
     "$(target_path "/Library/Services/Merge 3MF Build Plates.workflow/Contents/document.wflow")"
 
 INFO="$(target_path "/Library/Services/Merge 3MF Build Plates.workflow/Contents/Info.plist")"
-TMP_3MF=$(mktemp "${TMPDIR:-/tmp}/3mf-merge-tools-uti.XXXXXX.3mf")
+tmp_parent="${TMPDIR:-/tmp}"
+tmp_parent="${tmp_parent%/}"
+TMP_3MF_BASE=$(mktemp "$tmp_parent/3mf-merge-tools-uti.XXXXXX")
+TMP_3MF="${TMP_3MF_BASE}.3mf"
+mv "$TMP_3MF_BASE" "$TMP_3MF"
 THREEMF_UTI=$(mdls -raw -name kMDItemContentType "$TMP_3MF" 2>/dev/null || true)
 rm -f "$TMP_3MF"
 

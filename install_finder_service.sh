@@ -4,7 +4,11 @@ set -euo pipefail
 SERVICE_NAME="Merge 3MF Build Plates"
 SERVICE_DIR="$HOME/Library/Services/$SERVICE_NAME.workflow"
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-TMP_3MF=$(mktemp "${TMPDIR:-/tmp}/3mf-merge-tools-uti.XXXXXX.3mf")
+tmp_parent="${TMPDIR:-/tmp}"
+tmp_parent="${tmp_parent%/}"
+TMP_3MF_BASE=$(mktemp "$tmp_parent/3mf-merge-tools-uti.XXXXXX")
+TMP_3MF="${TMP_3MF_BASE}.3mf"
+mv "$TMP_3MF_BASE" "$TMP_3MF"
 THREEMF_UTI=$(mdls -raw -name kMDItemContentType "$TMP_3MF" 2>/dev/null || true)
 rm -f "$TMP_3MF"
 
