@@ -45,6 +45,7 @@ mkdir -p "$INSTALL_DIR/scripts" "$BIN_DIR"
 
 cp "$SCRIPT_DIR/scripts/merge_bambu_3mf.py" "$INSTALL_DIR/scripts/merge_bambu_3mf.py"
 cp "$SCRIPT_DIR/scripts/inspect_3mf_plates.py" "$INSTALL_DIR/scripts/inspect_3mf_plates.py"
+cp "$SCRIPT_DIR/scripts/review_duplicate_3mf_models.py" "$INSTALL_DIR/scripts/review_duplicate_3mf_models.py"
 if [ -f "$SCRIPT_DIR/scripts/merge_selected_3mf_service.sh" ]; then
     cp "$SCRIPT_DIR/scripts/merge_selected_3mf_service.sh" "$INSTALL_DIR/scripts/merge_selected_3mf_service.sh"
 fi
@@ -60,11 +61,16 @@ cat > "$BIN_DIR/3mf-inspect-plates" <<EOF
 exec "$PYTHON_BIN" "$INSTALL_DIR/scripts/inspect_3mf_plates.py" "\$@"
 EOF
 
-chmod 755 "$BIN_DIR/3mf-merge" "$BIN_DIR/3mf-inspect-plates"
+cat > "$BIN_DIR/3mf-review-duplicates" <<EOF
+#!/usr/bin/env sh
+exec "$PYTHON_BIN" "$INSTALL_DIR/scripts/review_duplicate_3mf_models.py" "\$@"
+EOF
+
+chmod 755 "$BIN_DIR/3mf-merge" "$BIN_DIR/3mf-inspect-plates" "$BIN_DIR/3mf-review-duplicates"
 
 echo "Installed $PROJECT_NAME"
 echo "  scripts: $INSTALL_DIR/scripts"
-echo "  commands: $BIN_DIR/3mf-merge, $BIN_DIR/3mf-inspect-plates"
+echo "  commands: $BIN_DIR/3mf-merge, $BIN_DIR/3mf-inspect-plates, $BIN_DIR/3mf-review-duplicates"
 
 case ":$PATH:" in
     *":$BIN_DIR:"*) ;;

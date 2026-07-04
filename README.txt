@@ -17,6 +17,11 @@ scripts/inspect_3mf_plates.py
   and object assignments. This is useful for checking a file before and after
   a Bambu Studio round-trip.
 
+scripts/review_duplicate_3mf_models.py
+  Reviews one or more 3MF archives and reports top-level model objects with
+  duplicate geometry. It includes object names and plate assignments when the
+  archive contains Bambu/Orca metadata.
+
 Installer
 ---------
 
@@ -33,6 +38,7 @@ and creates these commands:
 
 3mf-merge
 3mf-inspect-plates
+3mf-review-duplicates
 
 If ~/.local/bin is not already on your PATH, the installer prints the line to
 add to your shell profile.
@@ -69,13 +75,14 @@ To build a double-clickable macOS installer package:
 
 The package is written to:
 
-dist/3mf-merge-tools-0.1.2.pkg
+dist/3mf-merge-tools-0.2.0.pkg
 
 The package installs:
 
 /Library/Application Support/3mf-merge-tools/scripts
 /usr/local/bin/3mf-merge
 /usr/local/bin/3mf-inspect-plates
+/usr/local/bin/3mf-review-duplicates
 /Library/Services/Merge 3MF Build Plates.workflow
 
 This makes the command-line tools and the Finder Quick Action available
@@ -106,3 +113,4 @@ After installation, the same commands are:
 
 3mf-merge input_a.3mf input_b.3mf -o merged.3mf
 3mf-inspect-plates merged.3mf
+3mf-review-duplicates merged.3mf

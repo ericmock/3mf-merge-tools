@@ -6,7 +6,7 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-rm -f /usr/local/bin/3mf-merge /usr/local/bin/3mf-inspect-plates
+rm -f /usr/local/bin/3mf-merge /usr/local/bin/3mf-inspect-plates /usr/local/bin/3mf-review-duplicates
 rm -rf "/Library/Application Support/3mf-merge-tools"
 rm -rf "/Library/Services/Merge 3MF Build Plates.workflow"
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${VERSION:-0.1.2}"
+VERSION="${VERSION:-0.2.0}"
 IDENTIFIER="${IDENTIFIER:-com.ericmock.3mf-merge-tools}"
 PACKAGE_NAME="3mf-merge-tools-${VERSION}.pkg"
 BUILD_ROOT="${BUILD_ROOT:-/tmp/3mf-merge-tools-pkg-build}"
@@ -17,6 +17,7 @@ mkdir -p "$APP_SUPPORT/scripts" "$INSTALL_ROOT/usr/local/bin" "$SERVICE_DIR/Cont
 
 install -m 755 "$REPO_ROOT/scripts/merge_bambu_3mf.py" "$APP_SUPPORT/scripts/merge_bambu_3mf.py"
 install -m 755 "$REPO_ROOT/scripts/inspect_3mf_plates.py" "$APP_SUPPORT/scripts/inspect_3mf_plates.py"
+install -m 755 "$REPO_ROOT/scripts/review_duplicate_3mf_models.py" "$APP_SUPPORT/scripts/review_duplicate_3mf_models.py"
 install -m 755 "$REPO_ROOT/scripts/merge_selected_3mf_service.sh" "$APP_SUPPORT/scripts/merge_selected_3mf_service.sh"
 
 cat > "$INSTALL_ROOT/usr/local/bin/3mf-merge" <<'EOF'
@@ -29,7 +30,12 @@ cat > "$INSTALL_ROOT/usr/local/bin/3mf-inspect-plates" <<'EOF'
 exec python3 "/Library/Application Support/3mf-merge-tools/scripts/inspect_3mf_plates.py" "$@"
 EOF
 
-chmod 755 "$INSTALL_ROOT/usr/local/bin/3mf-merge" "$INSTALL_ROOT/usr/local/bin/3mf-inspect-plates"
+cat > "$INSTALL_ROOT/usr/local/bin/3mf-review-duplicates" <<'EOF'
+#!/usr/bin/env sh
+exec python3 "/Library/Application Support/3mf-merge-tools/scripts/review_duplicate_3mf_models.py" "$@"
+EOF
+
+chmod 755 "$INSTALL_ROOT/usr/local/bin/3mf-merge" "$INSTALL_ROOT/usr/local/bin/3mf-inspect-plates" "$INSTALL_ROOT/usr/local/bin/3mf-review-duplicates"
 
 cat > "$SERVICE_DIR/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -191,11 +197,17 @@ install -m 755 \
     "$SCRIPT_DIR/files/usr/local/bin/3mf-inspect-plates" \
     "$(target_path "/usr/local/bin/3mf-inspect-plates")"
 install -m 755 \
+    "$SCRIPT_DIR/files/usr/local/bin/3mf-review-duplicates" \
+    "$(target_path "/usr/local/bin/3mf-review-duplicates")"
+install -m 755 \
     "$SCRIPT_DIR/files/Library/Application Support/3mf-merge-tools/scripts/merge_bambu_3mf.py" \
     "$(target_path "/Library/Application Support/3mf-merge-tools/scripts/merge_bambu_3mf.py")"
 install -m 755 \
     "$SCRIPT_DIR/files/Library/Application Support/3mf-merge-tools/scripts/inspect_3mf_plates.py" \
     "$(target_path "/Library/Application Support/3mf-merge-tools/scripts/inspect_3mf_plates.py")"
+install -m 755 \
+    "$SCRIPT_DIR/files/Library/Application Support/3mf-merge-tools/scripts/review_duplicate_3mf_models.py" \
+    "$(target_path "/Library/Application Support/3mf-merge-tools/scripts/review_duplicate_3mf_models.py")"
 install -m 755 \
     "$SCRIPT_DIR/files/Library/Application Support/3mf-merge-tools/scripts/merge_selected_3mf_service.sh" \
     "$(target_path "/Library/Application Support/3mf-merge-tools/scripts/merge_selected_3mf_service.sh")"
@@ -234,7 +246,7 @@ chmod 755 "$SCRIPTS_DIR/postinstall"
 
 plutil -lint "$SERVICE_DIR/Contents/Info.plist" "$SERVICE_DIR/Contents/document.wflow" >/dev/null
 bash -n "$APP_SUPPORT/scripts/merge_selected_3mf_service.sh" "$SCRIPTS_DIR/postinstall"
-python3 -m py_compile "$REPO_ROOT/scripts/merge_bambu_3mf.py" "$REPO_ROOT/scripts/inspect_3mf_plates.py"
+python3 -m py_compile "$REPO_ROOT/scripts/merge_bambu_3mf.py" "$REPO_ROOT/scripts/inspect_3mf_plates.py" "$REPO_ROOT/scripts/review_duplicate_3mf_models.py"
 
 find "$SCRIPTS_DIR" -name "__pycache__" -type d -prune -exec rm -rf {} +
 find "$SCRIPTS_DIR" -name "._*" -delete
