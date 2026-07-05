@@ -46,48 +46,55 @@ def serialize_xml(root: ET.Element) -> bytes:
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
-def remove_build_objects(data: bytes, remove_ids: set[str]) -> bytes:
+def remap_build_objects(data: bytes, replacement_ids: dict[str, str]) -> bytes:
     root = ET.fromstring(data)
     resources = root.find(duplicate_review.qname(CORE_NS, "resources"))
     if resources is not None:
         for obj in list(resources):
-            if obj.tag == duplicate_review.qname(CORE_NS, "object") and obj.get("id") in remove_ids:
+            if obj.tag == duplicate_review.qname(CORE_NS, "object") and obj.get("id") in replacement_ids:
                 resources.remove(obj)
 
     build = root.find(duplicate_review.qname(CORE_NS, "build"))
     if build is not None:
-        for item in list(build):
-            if item.tag == duplicate_review.qname(CORE_NS, "item") and item.get("objectid") in remove_ids:
-                build.remove(item)
+        for item in build:
+            object_id = item.get("objectid")
+            if object_id in replacement_ids:
+                item.set("objectid", replacement_ids[object_id])
 
     return serialize_xml(root)
 
 
-def remove_model_settings_objects(data: bytes, remove_ids: set[str]) -> bytes:
+def remap_metadata_object_id(element: ET.Element, replacement_ids: dict[str, str]) -> None:
+    object_id = metadata_value(element, "object_id")
+    if object_id not in replacement_ids:
+        return
+    for metadata in element.findall("metadata"):
+        if metadata.get("key") == "object_id":
+            metadata.set("value", replacement_ids[object_id])
+
+
+def remap_model_settings_objects(data: bytes, replacement_ids: dict[str, str]) -> bytes:
     root = ET.fromstring(data)
 
     for child in list(root):
-        if child.tag == "object" and child.get("id") in remove_ids:
+        if child.tag == "object" and child.get("id") in replacement_ids:
             root.remove(child)
 
     for plate in root.findall("plate"):
-        for instance in list(plate):
-            if instance.tag != "model_instance":
-                continue
-            object_id = metadata_value(instance, "object_id")
-            if object_id in remove_ids:
-                plate.remove(instance)
+        for instance in plate.findall("model_instance"):
+            remap_metadata_object_id(instance, replacement_ids)
 
     for assemble in root.findall("assemble"):
-        for item in list(assemble):
-            if item.tag == "assemble_item" and item.get("object_id") in remove_ids:
-                assemble.remove(item)
+        for item in assemble.findall("assemble_item"):
+            object_id = item.get("object_id")
+            if object_id in replacement_ids:
+                item.set("object_id", replacement_ids[object_id])
 
     return serialize_xml(root)
 
 
-def write_deduplicated_3mf(source: Path, output: Path, remove_ids: set[str]) -> None:
-    if not remove_ids:
+def write_deduplicated_3mf(source: Path, output: Path, replacement_ids: dict[str, str]) -> None:
+    if not replacement_ids:
         raise ValueError("No model objects were selected for removal.")
     if source.resolve() == output.resolve():
         raise ValueError("Choose a new output path; the source 3MF is not modified in place.")
@@ -101,13 +108,25 @@ def write_deduplicated_3mf(source: Path, output: Path, remove_ids: set[str]) -> 
             for info in zin.infolist():
                 data = zin.read(info.filename)
                 if info.filename == "3D/3dmodel.model":
-                    data = remove_build_objects(data, remove_ids)
+                    data = remap_build_objects(data, replacement_ids)
                 elif info.filename == "Metadata/model_settings.config":
-                    data = remove_model_settings_objects(data, remove_ids)
+                    data = remap_model_settings_objects(data, replacement_ids)
                 zout.writestr(info, data)
         shutil.move(str(temp_output), output)
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def default_replacements(report: dict) -> dict[str, str]:
+    replacements: dict[str, str] = {}
+    for group in report["duplicate_groups"]:
+        occurrences = list(group["occurrences"])
+        if len(occurrences) < 2:
+            continue
+        keeper_id = occurrences[0]["object_id"]
+        for occurrence in occurrences[1:]:
+            replacements[occurrence["object_id"]] = keeper_id
+    return replacements
 
 
 class DeduplicateApp(tk.Tk):
@@ -120,6 +139,7 @@ class DeduplicateApp(tk.Tk):
         self.source_path: Path | None = None
         self.report: dict | None = None
         self.row_occurrences: dict[str, dict] = {}
+        self.group_rows: dict[str, list[str]] = {}
         self.selected_remove_ids: set[str] = set()
         self.reviewing = False
 
@@ -269,6 +289,7 @@ class DeduplicateApp(tk.Tk):
         self.source_path = path.resolve()
         self.file_var.set(str(self.source_path))
         self.row_occurrences.clear()
+        self.group_rows.clear()
         self.selected_remove_ids.clear()
         self.show_reviewing_state()
         self.update_idletasks()
@@ -300,6 +321,7 @@ class DeduplicateApp(tk.Tk):
     def populate_tree(self) -> None:
         self.tree.delete(*self.tree.get_children())
         self.row_occurrences.clear()
+        self.group_rows.clear()
         self.selected_remove_ids.clear()
 
         assert self.report is not None
@@ -336,6 +358,7 @@ class DeduplicateApp(tk.Tk):
                     ),
                 )
                 self.row_occurrences[row_id] = occurrence
+                self.group_rows.setdefault(parent, []).append(row_id)
 
     def toggle_selected_row(self, event: tk.Event | None = None) -> str:
         row_id = self.tree.focus()
@@ -369,6 +392,23 @@ class DeduplicateApp(tk.Tk):
         for row_id in self.row_occurrences:
             self.tree.set(row_id, "remove", "[ ]")
 
+    def selected_replacements(self) -> dict[str, str]:
+        replacements: dict[str, str] = {}
+        for group_row_ids in self.group_rows.values():
+            keeper_id: str | None = None
+            for row_id in group_row_ids:
+                object_id = self.row_occurrences[row_id]["object_id"]
+                if object_id not in self.selected_remove_ids:
+                    keeper_id = object_id
+                    break
+            if keeper_id is None:
+                raise ValueError("Each duplicate group must keep at least one model object.")
+            for row_id in group_row_ids:
+                object_id = self.row_occurrences[row_id]["object_id"]
+                if object_id in self.selected_remove_ids:
+                    replacements[object_id] = keeper_id
+        return replacements
+
     def save_copy(self) -> None:
         if self.source_path is None:
             messagebox.showinfo("No File", "Open a 3MF file first.", parent=self)
@@ -390,7 +430,8 @@ class DeduplicateApp(tk.Tk):
 
         output_path = Path(output)
         try:
-            write_deduplicated_3mf(self.source_path, output_path, self.selected_remove_ids)
+            replacements = self.selected_replacements()
+            write_deduplicated_3mf(self.source_path, output_path, replacements)
         except Exception as exc:
             messagebox.showerror("Save Failed", str(exc), parent=self)
             return
@@ -405,7 +446,22 @@ class DeduplicateApp(tk.Tk):
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("path", nargs="?", type=Path, help="Optional 3MF file to open.")
+    parser.add_argument(
+        "--save-default",
+        type=Path,
+        help="Write a deduplicated copy with the default all-but-first choices and exit.",
+    )
     args = parser.parse_args()
+    if args.save_default is not None:
+        if args.path is None:
+            parser.error("path is required with --save-default")
+        report = duplicate_review.review_file(args.path)
+        replacements = default_replacements(report)
+        write_deduplicated_3mf(args.path, args.save_default, replacements)
+        print(f"Wrote {args.save_default}")
+        print(f"Remapped {len(replacements)} duplicate model object(s).")
+        return 0
+
     app = DeduplicateApp(args.path)
     app.mainloop()
     return 0

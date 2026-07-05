@@ -27,6 +27,10 @@ scripts/deduplicate_3mf_models_ui.py
   choose which duplicate model objects to remove, and saves a new deduplicated
   copy. The source 3MF is not modified in place.
 
+scripts/validate_3mf_project.py
+  Checks a Bambu/Orca 3MF project for broken object references, missing model
+  settings, empty plates, missing thumbnails, and ZIP issues.
+
 Installer
 ---------
 
@@ -45,6 +49,7 @@ and creates these commands:
 3mf-inspect-plates
 3mf-review-duplicates
 3mf-deduplicate-ui
+3mf-validate-project
 
 If ~/.local/bin is not already on your PATH, the installer prints the line to
 add to your shell profile.
@@ -95,6 +100,7 @@ The package installs:
 /usr/local/bin/3mf-inspect-plates
 /usr/local/bin/3mf-review-duplicates
 /usr/local/bin/3mf-deduplicate-ui
+/usr/local/bin/3mf-validate-project
 /Library/Services/Merge 3MF Build Plates.workflow
 /Library/Services/Review 3MF Duplicate Models.workflow
 
@@ -128,3 +134,4 @@ After installation, the same commands are:
 3mf-inspect-plates merged.3mf
 3mf-review-duplicates merged.3mf
 3mf-deduplicate-ui merged.3mf
+3mf-validate-project merged.3mf

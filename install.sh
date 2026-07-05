@@ -47,6 +47,7 @@ cp "$SCRIPT_DIR/scripts/merge_bambu_3mf.py" "$INSTALL_DIR/scripts/merge_bambu_3m
 cp "$SCRIPT_DIR/scripts/inspect_3mf_plates.py" "$INSTALL_DIR/scripts/inspect_3mf_plates.py"
 cp "$SCRIPT_DIR/scripts/review_duplicate_3mf_models.py" "$INSTALL_DIR/scripts/review_duplicate_3mf_models.py"
 cp "$SCRIPT_DIR/scripts/deduplicate_3mf_models_ui.py" "$INSTALL_DIR/scripts/deduplicate_3mf_models_ui.py"
+cp "$SCRIPT_DIR/scripts/validate_3mf_project.py" "$INSTALL_DIR/scripts/validate_3mf_project.py"
 if [ -f "$SCRIPT_DIR/scripts/merge_selected_3mf_service.sh" ]; then
     cp "$SCRIPT_DIR/scripts/merge_selected_3mf_service.sh" "$INSTALL_DIR/scripts/merge_selected_3mf_service.sh"
 fi
@@ -75,11 +76,16 @@ cat > "$BIN_DIR/3mf-deduplicate-ui" <<EOF
 exec "$PYTHON_BIN" "$INSTALL_DIR/scripts/deduplicate_3mf_models_ui.py" "\$@"
 EOF
 
-chmod 755 "$BIN_DIR/3mf-merge" "$BIN_DIR/3mf-inspect-plates" "$BIN_DIR/3mf-review-duplicates" "$BIN_DIR/3mf-deduplicate-ui"
+cat > "$BIN_DIR/3mf-validate-project" <<EOF
+#!/usr/bin/env sh
+exec "$PYTHON_BIN" "$INSTALL_DIR/scripts/validate_3mf_project.py" "\$@"
+EOF
+
+chmod 755 "$BIN_DIR/3mf-merge" "$BIN_DIR/3mf-inspect-plates" "$BIN_DIR/3mf-review-duplicates" "$BIN_DIR/3mf-deduplicate-ui" "$BIN_DIR/3mf-validate-project"
 
 echo "Installed $PROJECT_NAME"
 echo "  scripts: $INSTALL_DIR/scripts"
-echo "  commands: $BIN_DIR/3mf-merge, $BIN_DIR/3mf-inspect-plates, $BIN_DIR/3mf-review-duplicates, $BIN_DIR/3mf-deduplicate-ui"
+echo "  commands: $BIN_DIR/3mf-merge, $BIN_DIR/3mf-inspect-plates, $BIN_DIR/3mf-review-duplicates, $BIN_DIR/3mf-deduplicate-ui, $BIN_DIR/3mf-validate-project"
 
 case ":$PATH:" in
     *":$BIN_DIR:"*) ;;
