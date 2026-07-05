@@ -20,6 +20,14 @@ import review_duplicate_3mf_models as duplicate_review
 CORE_NS = duplicate_review.CORE_NS
 BAMBU_NS = "http://schemas.bambulab.com/package/2021"
 PROD_NS = duplicate_review.PROD_NS
+BG = "#f6f7f9"
+PANEL_BG = "#ffffff"
+TEXT = "#202124"
+MUTED_TEXT = "#5f6368"
+ACCENT = "#2563eb"
+BORDER = "#c9ced6"
+HEADER_BG = "#e9edf4"
+SELECT_BG = "#dbeafe"
 
 ET.register_namespace("", CORE_NS)
 ET.register_namespace("BambuStudio", BAMBU_NS)
@@ -115,6 +123,7 @@ class DeduplicateApp(tk.Tk):
         self.selected_remove_ids: set[str] = set()
         self.reviewing = False
 
+        self._configure_styles()
         self._build_ui()
         if initial_file is not None:
             initial_path = initial_file.resolve()
@@ -122,29 +131,76 @@ class DeduplicateApp(tk.Tk):
             self.show_reviewing_state()
             self.after(100, lambda: self.load_file(initial_path))
 
+    def _configure_styles(self) -> None:
+        self.configure(bg=BG)
+        self.option_add("*Font", "TkDefaultFont")
+        self.option_add("*Foreground", TEXT)
+        self.option_add("*Background", BG)
+
+        style = ttk.Style(self)
+        try:
+            style.theme_use("clam")
+        except tk.TclError:
+            pass
+
+        style.configure(".", background=BG, foreground=TEXT)
+        style.configure("App.TFrame", background=BG)
+        style.configure("App.TLabel", background=BG, foreground=TEXT)
+        style.configure("Muted.App.TLabel", background=BG, foreground=MUTED_TEXT)
+        style.configure("App.TButton", background="#eef2f7", foreground=TEXT, padding=(10, 6))
+        style.map(
+            "App.TButton",
+            background=[("active", "#e2e8f0"), ("disabled", "#edf0f4")],
+            foreground=[("disabled", "#8a9099")],
+        )
+        style.configure("App.Horizontal.TProgressbar", background=ACCENT, troughcolor="#d8dee8")
+        style.configure(
+            "App.Treeview",
+            background=PANEL_BG,
+            foreground=TEXT,
+            fieldbackground=PANEL_BG,
+            bordercolor=BORDER,
+            lightcolor=BORDER,
+            darkcolor=BORDER,
+            rowheight=26,
+        )
+        style.map(
+            "App.Treeview",
+            background=[("selected", SELECT_BG)],
+            foreground=[("selected", TEXT)],
+        )
+        style.configure(
+            "App.Treeview.Heading",
+            background=HEADER_BG,
+            foreground=TEXT,
+            relief="flat",
+            padding=(6, 5),
+        )
+        style.map("App.Treeview.Heading", background=[("active", "#dde4ee")])
+
     def _build_ui(self) -> None:
         self.columnconfigure(0, weight=1)
         self.rowconfigure(2, weight=1)
 
-        top = ttk.Frame(self, padding=10)
+        top = ttk.Frame(self, padding=10, style="App.TFrame")
         top.grid(row=0, column=0, sticky="ew")
         top.columnconfigure(1, weight=1)
 
-        ttk.Button(top, text="Open 3MF...", command=self.choose_file).grid(row=0, column=0, padx=(0, 8))
+        ttk.Button(top, text="Open 3MF...", command=self.choose_file, style="App.TButton").grid(row=0, column=0, padx=(0, 8))
         self.file_var = tk.StringVar(value="No file loaded")
-        ttk.Label(top, textvariable=self.file_var, anchor="w").grid(row=0, column=1, sticky="ew")
+        ttk.Label(top, textvariable=self.file_var, anchor="w", style="App.TLabel").grid(row=0, column=1, sticky="ew")
 
-        summary = ttk.Frame(self, padding=(10, 0, 10, 8))
+        summary = ttk.Frame(self, padding=(10, 0, 10, 8), style="App.TFrame")
         summary.grid(row=1, column=0, sticky="ew")
         summary.columnconfigure(0, weight=1)
         self.summary_var = tk.StringVar(value="Open a 3MF file to review duplicate model groups.")
-        ttk.Label(summary, textvariable=self.summary_var, anchor="w").grid(row=0, column=0, sticky="ew")
-        self.progress = ttk.Progressbar(summary, mode="indeterminate", length=170)
+        ttk.Label(summary, textvariable=self.summary_var, anchor="w", style="App.TLabel").grid(row=0, column=0, sticky="ew")
+        self.progress = ttk.Progressbar(summary, mode="indeterminate", length=170, style="App.Horizontal.TProgressbar")
         self.progress.grid(row=0, column=1, sticky="e", padx=(12, 0))
         self.progress.grid_remove()
 
         columns = ("remove", "object_id", "name", "faces", "plates")
-        self.tree = ttk.Treeview(self, columns=columns, show="tree headings", selectmode="browse")
+        self.tree = ttk.Treeview(self, columns=columns, show="tree headings", selectmode="browse", style="App.Treeview")
         self.tree.heading("#0", text="Duplicate Group")
         self.tree.heading("remove", text="Remove")
         self.tree.heading("object_id", text="Object")
@@ -165,15 +221,15 @@ class DeduplicateApp(tk.Tk):
         scrollbar.grid(row=2, column=1, sticky="ns")
         self.tree.configure(yscrollcommand=scrollbar.set)
 
-        bottom = ttk.Frame(self, padding=10)
+        bottom = ttk.Frame(self, padding=10, style="App.TFrame")
         bottom.grid(row=3, column=0, sticky="ew")
         bottom.columnconfigure(0, weight=1)
 
-        self.select_button = ttk.Button(bottom, text="Select All But First", command=self.select_all_but_first)
+        self.select_button = ttk.Button(bottom, text="Select All But First", command=self.select_all_but_first, style="App.TButton")
         self.select_button.grid(row=0, column=1, padx=4)
-        self.clear_button = ttk.Button(bottom, text="Clear Removals", command=self.clear_removals)
+        self.clear_button = ttk.Button(bottom, text="Clear Removals", command=self.clear_removals, style="App.TButton")
         self.clear_button.grid(row=0, column=2, padx=4)
-        self.save_button = ttk.Button(bottom, text="Save Deduplicated Copy...", command=self.save_copy)
+        self.save_button = ttk.Button(bottom, text="Save Deduplicated Copy...", command=self.save_copy, style="App.TButton")
         self.save_button.grid(row=0, column=3, padx=(12, 0))
 
     def show_reviewing_state(self) -> None:
