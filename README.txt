@@ -22,6 +22,11 @@ scripts/review_duplicate_3mf_models.py
   duplicate geometry. It includes object names and plate assignments when the
   archive contains Bambu/Orca metadata.
 
+scripts/deduplicate_3mf_models_ui.py
+  Opens a small UI for one 3MF file, shows duplicate model groups, lets you
+  choose which duplicate model objects to remove, and saves a new deduplicated
+  copy. The source 3MF is not modified in place.
+
 Installer
 ---------
 
@@ -39,6 +44,7 @@ and creates these commands:
 3mf-merge
 3mf-inspect-plates
 3mf-review-duplicates
+3mf-deduplicate-ui
 
 If ~/.local/bin is not already on your PATH, the installer prints the line to
 add to your shell profile.
@@ -80,7 +86,7 @@ To build a double-clickable macOS installer package:
 
 The package is written to:
 
-dist/3mf-merge-tools-0.2.1.pkg
+dist/3mf-merge-tools-0.3.0.pkg
 
 The package installs:
 
@@ -88,6 +94,7 @@ The package installs:
 /usr/local/bin/3mf-merge
 /usr/local/bin/3mf-inspect-plates
 /usr/local/bin/3mf-review-duplicates
+/usr/local/bin/3mf-deduplicate-ui
 /Library/Services/Merge 3MF Build Plates.workflow
 /Library/Services/Review 3MF Duplicate Models.workflow
 
@@ -120,3 +127,4 @@ After installation, the same commands are:
 3mf-merge input_a.3mf input_b.3mf -o merged.3mf
 3mf-inspect-plates merged.3mf
 3mf-review-duplicates merged.3mf
+3mf-deduplicate-ui merged.3mf
