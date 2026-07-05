@@ -113,10 +113,14 @@ class DeduplicateApp(tk.Tk):
         self.report: dict | None = None
         self.row_occurrences: dict[str, dict] = {}
         self.selected_remove_ids: set[str] = set()
+        self.reviewing = False
 
         self._build_ui()
         if initial_file is not None:
-            self.load_file(initial_file)
+            initial_path = initial_file.resolve()
+            self.file_var.set(str(initial_path))
+            self.show_reviewing_state()
+            self.after(100, lambda: self.load_file(initial_path))
 
     def _build_ui(self) -> None:
         self.columnconfigure(0, weight=1)
@@ -135,6 +139,9 @@ class DeduplicateApp(tk.Tk):
         summary.columnconfigure(0, weight=1)
         self.summary_var = tk.StringVar(value="Open a 3MF file to review duplicate model groups.")
         ttk.Label(summary, textvariable=self.summary_var, anchor="w").grid(row=0, column=0, sticky="ew")
+        self.progress = ttk.Progressbar(summary, mode="indeterminate", length=170)
+        self.progress.grid(row=0, column=1, sticky="e", padx=(12, 0))
+        self.progress.grid_remove()
 
         columns = ("remove", "object_id", "name", "faces", "plates")
         self.tree = ttk.Treeview(self, columns=columns, show="tree headings", selectmode="browse")
@@ -162,9 +169,37 @@ class DeduplicateApp(tk.Tk):
         bottom.grid(row=3, column=0, sticky="ew")
         bottom.columnconfigure(0, weight=1)
 
-        ttk.Button(bottom, text="Select All But First", command=self.select_all_but_first).grid(row=0, column=1, padx=4)
-        ttk.Button(bottom, text="Clear Removals", command=self.clear_removals).grid(row=0, column=2, padx=4)
-        ttk.Button(bottom, text="Save Deduplicated Copy...", command=self.save_copy).grid(row=0, column=3, padx=(12, 0))
+        self.select_button = ttk.Button(bottom, text="Select All But First", command=self.select_all_but_first)
+        self.select_button.grid(row=0, column=1, padx=4)
+        self.clear_button = ttk.Button(bottom, text="Clear Removals", command=self.clear_removals)
+        self.clear_button.grid(row=0, column=2, padx=4)
+        self.save_button = ttk.Button(bottom, text="Save Deduplicated Copy...", command=self.save_copy)
+        self.save_button.grid(row=0, column=3, padx=(12, 0))
+
+    def show_reviewing_state(self) -> None:
+        self.reviewing = True
+        self.summary_var.set("Finding duplicate model geometry...")
+        self.tree.delete(*self.tree.get_children())
+        self.tree.insert(
+            "",
+            "end",
+            text="Scanning selected 3MF...",
+            values=("", "", "This can take a moment for large projects.", "", ""),
+            open=True,
+        )
+        self.progress.grid()
+        self.progress.start(12)
+        self.select_button.configure(state="disabled")
+        self.clear_button.configure(state="disabled")
+        self.save_button.configure(state="disabled")
+
+    def hide_reviewing_state(self) -> None:
+        self.reviewing = False
+        self.progress.stop()
+        self.progress.grid_remove()
+        self.select_button.configure(state="normal")
+        self.clear_button.configure(state="normal")
+        self.save_button.configure(state="normal")
 
     def choose_file(self) -> None:
         filename = filedialog.askopenfilename(
@@ -177,10 +212,9 @@ class DeduplicateApp(tk.Tk):
     def load_file(self, path: Path) -> None:
         self.source_path = path.resolve()
         self.file_var.set(str(self.source_path))
-        self.summary_var.set("Reviewing duplicate geometry...")
-        self.tree.delete(*self.tree.get_children())
         self.row_occurrences.clear()
         self.selected_remove_ids.clear()
+        self.show_reviewing_state()
         self.update_idletasks()
 
         threading.Thread(target=self._review_worker, args=(self.source_path,), daemon=True).start()
@@ -197,6 +231,7 @@ class DeduplicateApp(tk.Tk):
     def finish_review(self, path: Path, report: dict | None, error: Exception | None) -> None:
         if self.source_path != path:
             return
+        self.hide_reviewing_state()
         if error is not None:
             self.report = None
             self.summary_var.set("Review failed.")
