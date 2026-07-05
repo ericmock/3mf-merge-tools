@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="3MF Merge Tools"
+APP_NAME="3MF Tools"
 if [ "${INSTALL_DIR:-}" ]; then
     INSTALL_DIR="$INSTALL_DIR"
 elif [ -f "$HOME/.local/share/3mf-merge-tools/scripts/deduplicate_3mf_models_ui.py" ]; then
@@ -14,13 +14,13 @@ PYTHON_BIN="${PYTHON:-python3}"
 
 alert() {
     /usr/bin/osascript -e 'on run argv' \
-        -e 'display dialog (item 1 of argv) buttons {"OK"} default button "OK" with title "3MF Merge Tools"' \
+        -e 'display dialog (item 1 of argv) buttons {"OK"} default button "OK" with title "3MF Tools"' \
         -e 'end run' -- "$1" >/dev/null
 }
 
 notify() {
     /usr/bin/osascript -e 'on run argv' \
-        -e 'display notification (item 1 of argv) with title "3MF Merge Tools"' \
+        -e 'display notification (item 1 of argv) with title "3MF Tools"' \
         -e 'end run' -- "$1" >/dev/null
 }
 

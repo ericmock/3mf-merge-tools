@@ -1,5 +1,5 @@
-Schubox 3MF Merge Tools
-=======================
+Schubox 3MF Tools
+=================
 
 This repository contains the reusable scripts used to merge Bambu Studio /
 OrcaSlicer 3MF project files while preserving build plates and plate names.
@@ -91,7 +91,7 @@ To build a double-clickable macOS installer package:
 
 The package is written to:
 
-dist/3mf-merge-tools-0.4.0.pkg
+dist/3mf-tools-0.4.0.pkg
 
 The package installs:
 

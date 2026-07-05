@@ -3,7 +3,7 @@ set -euo pipefail
 
 VERSION="${VERSION:-0.4.0}"
 IDENTIFIER="${IDENTIFIER:-com.ericmock.3mf-merge-tools}"
-PACKAGE_NAME="3mf-merge-tools-${VERSION}.pkg"
+PACKAGE_NAME="3mf-tools-${VERSION}.pkg"
 BUILD_ROOT="${BUILD_ROOT:-/tmp/3mf-merge-tools-pkg-build}"
 REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 SCRIPTS_DIR="$BUILD_ROOT/scripts"
