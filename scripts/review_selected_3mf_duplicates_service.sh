@@ -4,12 +4,12 @@ set -euo pipefail
 APP_NAME="3MF Merge Tools"
 if [ "${INSTALL_DIR:-}" ]; then
     INSTALL_DIR="$INSTALL_DIR"
-elif [ -f "$HOME/.local/share/3mf-merge-tools/scripts/review_duplicate_3mf_models.py" ]; then
+elif [ -f "$HOME/.local/share/3mf-merge-tools/scripts/deduplicate_3mf_models_ui.py" ]; then
     INSTALL_DIR="$HOME/.local/share/3mf-merge-tools"
 else
     INSTALL_DIR="/Library/Application Support/3mf-merge-tools"
 fi
-REVIEW_SCRIPT="$INSTALL_DIR/scripts/review_duplicate_3mf_models.py"
+UI_SCRIPT="$INSTALL_DIR/scripts/deduplicate_3mf_models_ui.py"
 PYTHON_BIN="${PYTHON:-python3}"
 
 alert() {
@@ -29,8 +29,8 @@ if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
     exit 1
 fi
 
-if [ ! -f "$REVIEW_SCRIPT" ]; then
-    alert "The duplicate review script was not found at:\n\n$REVIEW_SCRIPT\n\nRun the 3mf-merge-tools installer and try again."
+if [ ! -f "$UI_SCRIPT" ]; then
+    alert "The duplicate model UI script was not found at:\n\n$UI_SCRIPT\n\nRun the 3mf-merge-tools installer and try again."
     exit 1
 fi
 
@@ -46,41 +46,36 @@ for item in "$@"; do
 done
 
 if [ "${#inputs[@]}" -lt 1 ]; then
-    alert "Select one or more .3mf files in Finder, then run this Quick Action again."
+    alert "Select one .3mf file in Finder, then run this Quick Action again."
     exit 0
 fi
 
-first_dir=$(dirname "${inputs[0]}")
-timestamp=$(date +%Y%m%d_%H%M%S)
-report_path="$first_dir/duplicate_model_review_$timestamp.txt"
+if [ "${#inputs[@]}" -gt 1 ]; then
+    alert "Select exactly one .3mf file for the duplicate model editor. The editor saves a deduplicated copy of that one project."
+    exit 0
+fi
 
 tmp_parent="${TMPDIR:-/tmp}"
 tmp_parent="${tmp_parent%/}"
-log_file=$(mktemp "$tmp_parent/3mf-duplicate-review-service.XXXXXX")
+log_file=$(mktemp "$tmp_parent/3mf-deduplicate-ui-service.XXXXXX")
 
-if {
-    echo "Selected input files:"
-    printf ' - %s\n' "${inputs[@]}"
-    echo "Report file:"
-    printf ' - %s\n' "$report_path"
-    echo
-    "$PYTHON_BIN" "$REVIEW_SCRIPT" --cross-file "${inputs[@]}"
-} >"$report_path" 2>"$log_file"; then
-    /usr/bin/open -R "$report_path" >/dev/null 2>&1 || true
-    /usr/bin/open "$report_path" >/dev/null 2>&1 || true
-    notify "Reviewed ${#inputs[@]} 3MF file(s)."
+/usr/bin/nohup "$PYTHON_BIN" "$UI_SCRIPT" "${inputs[0]}" >"$log_file" 2>&1 &
+ui_pid=$!
+sleep 0.5
+
+if kill -0 "$ui_pid" >/dev/null 2>&1; then
+    notify "Opened the 3MF duplicate model editor."
     exit 0
 fi
 
-message=$("$PYTHON_BIN" - "$log_file" "$report_path" <<'PY'
+message=$("$PYTHON_BIN" - "$log_file" <<'PY'
 from pathlib import Path
 import sys
 
 log_text = Path(sys.argv[1]).read_text(errors="replace")
-report_path = Path(sys.argv[2])
 if len(log_text) > 3000:
     log_text = log_text[-3000:]
-print(f"Duplicate review failed. Partial report:\n\n{report_path}\n\nDetails:\n\n{log_text}")
+print(f"Could not open the 3MF duplicate model editor. Details:\n\n{log_text}")
 PY
 )
 

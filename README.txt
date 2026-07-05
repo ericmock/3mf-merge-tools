@@ -64,10 +64,10 @@ After installing it, select two or more .3mf files in Finder, Control-click,
 then choose Quick Actions > Merge 3MF Build Plates. The action asks where to
 save the merged 3MF, runs the merge, and reveals the output file in Finder.
 
-You can also select one or more .3mf files, Control-click, then choose Quick
-Actions > Review 3MF Duplicate Models. The action writes a timestamped
-duplicate_model_review_YYYYMMDD_HHMMSS.txt report beside the selected file(s),
-reveals it in Finder, and opens it.
+You can also select one .3mf file, Control-click, then choose Quick Actions >
+Review 3MF Duplicate Models. The action opens the duplicate model editor, where
+you can choose which duplicate model objects to remove and save a new
+deduplicated copy. The source 3MF is not modified in place.
 
 The Quick Actions register with Finder for the current system's .3mf content
 type, so they should appear in the Finder contextual menu when all selected
