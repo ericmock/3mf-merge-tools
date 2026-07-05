@@ -9,6 +9,7 @@ fi
 rm -f /usr/local/bin/3mf-merge /usr/local/bin/3mf-inspect-plates /usr/local/bin/3mf-review-duplicates
 rm -rf "/Library/Application Support/3mf-merge-tools"
 rm -rf "/Library/Services/Merge 3MF Build Plates.workflow"
+rm -rf "/Library/Services/Review 3MF Duplicate Models.workflow"
 
 if [ -x /System/Library/CoreServices/pbs ]; then
     /System/Library/CoreServices/pbs -update || true

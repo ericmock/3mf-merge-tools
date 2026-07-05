@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION="${VERSION:-0.2.0}"
+VERSION="${VERSION:-0.2.1}"
 IDENTIFIER="${IDENTIFIER:-com.ericmock.3mf-merge-tools}"
 PACKAGE_NAME="3mf-merge-tools-${VERSION}.pkg"
 BUILD_ROOT="${BUILD_ROOT:-/tmp/3mf-merge-tools-pkg-build}"
@@ -9,16 +9,18 @@ REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 SCRIPTS_DIR="$BUILD_ROOT/scripts"
 INSTALL_ROOT="$SCRIPTS_DIR/files"
 OUTPUT_DIR="${OUTPUT_DIR:-$REPO_ROOT/dist}"
-SERVICE_DIR="$INSTALL_ROOT/Library/Services/Merge 3MF Build Plates.workflow"
+MERGE_SERVICE_DIR="$INSTALL_ROOT/Library/Services/Merge 3MF Build Plates.workflow"
+REVIEW_SERVICE_DIR="$INSTALL_ROOT/Library/Services/Review 3MF Duplicate Models.workflow"
 APP_SUPPORT="$INSTALL_ROOT/Library/Application Support/3mf-merge-tools"
 
 rm -rf "$BUILD_ROOT"
-mkdir -p "$APP_SUPPORT/scripts" "$INSTALL_ROOT/usr/local/bin" "$SERVICE_DIR/Contents" "$OUTPUT_DIR"
+mkdir -p "$APP_SUPPORT/scripts" "$INSTALL_ROOT/usr/local/bin" "$MERGE_SERVICE_DIR/Contents" "$REVIEW_SERVICE_DIR/Contents" "$OUTPUT_DIR"
 
 install -m 755 "$REPO_ROOT/scripts/merge_bambu_3mf.py" "$APP_SUPPORT/scripts/merge_bambu_3mf.py"
 install -m 755 "$REPO_ROOT/scripts/inspect_3mf_plates.py" "$APP_SUPPORT/scripts/inspect_3mf_plates.py"
 install -m 755 "$REPO_ROOT/scripts/review_duplicate_3mf_models.py" "$APP_SUPPORT/scripts/review_duplicate_3mf_models.py"
 install -m 755 "$REPO_ROOT/scripts/merge_selected_3mf_service.sh" "$APP_SUPPORT/scripts/merge_selected_3mf_service.sh"
+install -m 755 "$REPO_ROOT/scripts/review_selected_3mf_duplicates_service.sh" "$APP_SUPPORT/scripts/review_selected_3mf_duplicates_service.sh"
 
 cat > "$INSTALL_ROOT/usr/local/bin/3mf-merge" <<'EOF'
 #!/usr/bin/env sh
@@ -37,7 +39,7 @@ EOF
 
 chmod 755 "$INSTALL_ROOT/usr/local/bin/3mf-merge" "$INSTALL_ROOT/usr/local/bin/3mf-inspect-plates" "$INSTALL_ROOT/usr/local/bin/3mf-review-duplicates"
 
-cat > "$SERVICE_DIR/Contents/Info.plist" <<'PLIST'
+cat > "$MERGE_SERVICE_DIR/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -71,7 +73,7 @@ cat > "$SERVICE_DIR/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-cat > "$SERVICE_DIR/Contents/document.wflow" <<'PLIST'
+cat > "$MERGE_SERVICE_DIR/Contents/document.wflow" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -170,6 +172,139 @@ cat > "$SERVICE_DIR/Contents/document.wflow" <<'PLIST'
 </plist>
 PLIST
 
+cat > "$REVIEW_SERVICE_DIR/Contents/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSBackgroundColorName</key>
+			<string>background</string>
+			<key>NSIconName</key>
+			<string>NSActionTemplate</string>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Review 3MF Duplicate Models</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>runWorkflowAsService</string>
+			<key>NSRequiredContext</key>
+			<dict>
+				<key>NSApplicationIdentifier</key>
+				<string>com.apple.finder</string>
+			</dict>
+			<key>NSSendFileTypes</key>
+			<array>
+				<string>com.hildahandcraft.3mf</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
+PLIST
+
+cat > "$REVIEW_SERVICE_DIR/Contents/document.wflow" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>actions</key>
+	<array>
+		<dict>
+			<key>action</key>
+			<dict>
+				<key>ActionBundlePath</key>
+				<string>/System/Library/Automator/Run Shell Script.action</string>
+				<key>ActionName</key>
+				<string>Run Shell Script</string>
+				<key>ActionParameters</key>
+				<dict>
+					<key>CheckedForUserDefaultShell</key>
+					<true/>
+					<key>COMMAND_STRING</key>
+					<string>&quot;/Library/Application Support/3mf-merge-tools/scripts/review_selected_3mf_duplicates_service.sh&quot; &quot;$@&quot;</string>
+					<key>inputMethod</key>
+					<integer>1</integer>
+					<key>shell</key>
+					<string>/bin/zsh</string>
+					<key>source</key>
+					<string></string>
+				</dict>
+				<key>AMAccepts</key>
+				<dict>
+					<key>Container</key>
+					<string>List</string>
+					<key>Optional</key>
+					<true/>
+					<key>Types</key>
+					<array>
+						<string>com.apple.cocoa.string</string>
+					</array>
+				</dict>
+				<key>AMActionVersion</key>
+				<string>2.0.3</string>
+				<key>AMApplication</key>
+				<array>
+					<string>Automator</string>
+				</array>
+				<key>AMProvides</key>
+				<dict>
+					<key>Container</key>
+					<string>List</string>
+					<key>Types</key>
+					<array>
+						<string>com.apple.cocoa.string</string>
+					</array>
+				</dict>
+				<key>BundleIdentifier</key>
+				<string>com.apple.RunShellScript</string>
+				<key>CanShowSelectedItemsWhenRun</key>
+				<false/>
+				<key>CanShowWhenRun</key>
+				<true/>
+				<key>Class Name</key>
+				<string>RunShellScriptAction</string>
+				<key>InputUUID</key>
+				<string>6A14D980-60C4-46C7-872F-55C51F8A6A3C</string>
+				<key>OutputUUID</key>
+				<string>7AF7D7EA-0701-4B39-9942-6A764A56C964</string>
+				<key>UUID</key>
+				<string>07FB4BDF-30E0-4978-B739-06947B0320FD</string>
+			</dict>
+			<key>isViewVisible</key>
+			<integer>1</integer>
+		</dict>
+	</array>
+	<key>AMApplicationBuild</key>
+	<string>528</string>
+	<key>AMApplicationVersion</key>
+	<string>2.10</string>
+	<key>AMDocumentVersion</key>
+	<string>2</string>
+	<key>connectors</key>
+	<dict/>
+	<key>workflowMetaData</key>
+	<dict>
+		<key>serviceApplicationBundleID</key>
+		<string>com.apple.finder</string>
+		<key>serviceApplicationPath</key>
+		<string>/System/Library/CoreServices/Finder.app</string>
+		<key>serviceInputTypeIdentifier</key>
+		<string>com.apple.Automator.fileSystemObject</string>
+		<key>serviceOutputTypeIdentifier</key>
+		<string>com.apple.Automator.nothing</string>
+		<key>serviceProcessesInput</key>
+		<false/>
+		<key>workflowTypeIdentifier</key>
+		<string>com.apple.Automator.servicesMenu</string>
+	</dict>
+</dict>
+</plist>
+PLIST
+
 cat > "$SCRIPTS_DIR/postinstall" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -188,7 +323,8 @@ target_path() {
 install -d -m 755 \
     "$(target_path "/usr/local/bin")" \
     "$(target_path "/Library/Application Support/3mf-merge-tools/scripts")" \
-    "$(target_path "/Library/Services/Merge 3MF Build Plates.workflow/Contents")"
+    "$(target_path "/Library/Services/Merge 3MF Build Plates.workflow/Contents")" \
+    "$(target_path "/Library/Services/Review 3MF Duplicate Models.workflow/Contents")"
 
 install -m 755 \
     "$SCRIPT_DIR/files/usr/local/bin/3mf-merge" \
@@ -211,14 +347,24 @@ install -m 755 \
 install -m 755 \
     "$SCRIPT_DIR/files/Library/Application Support/3mf-merge-tools/scripts/merge_selected_3mf_service.sh" \
     "$(target_path "/Library/Application Support/3mf-merge-tools/scripts/merge_selected_3mf_service.sh")"
+install -m 755 \
+    "$SCRIPT_DIR/files/Library/Application Support/3mf-merge-tools/scripts/review_selected_3mf_duplicates_service.sh" \
+    "$(target_path "/Library/Application Support/3mf-merge-tools/scripts/review_selected_3mf_duplicates_service.sh")"
 install -m 644 \
     "$SCRIPT_DIR/files/Library/Services/Merge 3MF Build Plates.workflow/Contents/Info.plist" \
     "$(target_path "/Library/Services/Merge 3MF Build Plates.workflow/Contents/Info.plist")"
 install -m 644 \
     "$SCRIPT_DIR/files/Library/Services/Merge 3MF Build Plates.workflow/Contents/document.wflow" \
     "$(target_path "/Library/Services/Merge 3MF Build Plates.workflow/Contents/document.wflow")"
+install -m 644 \
+    "$SCRIPT_DIR/files/Library/Services/Review 3MF Duplicate Models.workflow/Contents/Info.plist" \
+    "$(target_path "/Library/Services/Review 3MF Duplicate Models.workflow/Contents/Info.plist")"
+install -m 644 \
+    "$SCRIPT_DIR/files/Library/Services/Review 3MF Duplicate Models.workflow/Contents/document.wflow" \
+    "$(target_path "/Library/Services/Review 3MF Duplicate Models.workflow/Contents/document.wflow")"
 
-INFO="$(target_path "/Library/Services/Merge 3MF Build Plates.workflow/Contents/Info.plist")"
+MERGE_INFO="$(target_path "/Library/Services/Merge 3MF Build Plates.workflow/Contents/Info.plist")"
+REVIEW_INFO="$(target_path "/Library/Services/Review 3MF Duplicate Models.workflow/Contents/Info.plist")"
 tmp_parent="${TMPDIR:-/tmp}"
 tmp_parent="${tmp_parent%/}"
 TMP_3MF_BASE=$(mktemp "$tmp_parent/3mf-merge-tools-uti.XXXXXX")
@@ -231,9 +377,11 @@ if [ -z "$THREEMF_UTI" ] || [ "$THREEMF_UTI" = "(null)" ]; then
     THREEMF_UTI="com.hildahandcraft.3mf"
 fi
 
-if [ -f "$INFO" ]; then
-    plutil -replace NSServices.0.NSSendFileTypes -json "[\"$THREEMF_UTI\"]" "$INFO" || true
-fi
+for INFO in "$MERGE_INFO" "$REVIEW_INFO"; do
+    if [ -f "$INFO" ]; then
+        plutil -replace NSServices.0.NSSendFileTypes -json "[\"$THREEMF_UTI\"]" "$INFO" || true
+    fi
+done
 
 if [ "$TARGET_VOLUME" = "/" ] && [ -x /System/Library/CoreServices/pbs ]; then
     /System/Library/CoreServices/pbs -update || true
@@ -244,8 +392,12 @@ EOF
 
 chmod 755 "$SCRIPTS_DIR/postinstall"
 
-plutil -lint "$SERVICE_DIR/Contents/Info.plist" "$SERVICE_DIR/Contents/document.wflow" >/dev/null
-bash -n "$APP_SUPPORT/scripts/merge_selected_3mf_service.sh" "$SCRIPTS_DIR/postinstall"
+plutil -lint \
+    "$MERGE_SERVICE_DIR/Contents/Info.plist" \
+    "$MERGE_SERVICE_DIR/Contents/document.wflow" \
+    "$REVIEW_SERVICE_DIR/Contents/Info.plist" \
+    "$REVIEW_SERVICE_DIR/Contents/document.wflow" >/dev/null
+bash -n "$APP_SUPPORT/scripts/merge_selected_3mf_service.sh" "$APP_SUPPORT/scripts/review_selected_3mf_duplicates_service.sh" "$SCRIPTS_DIR/postinstall"
 python3 -m py_compile "$REPO_ROOT/scripts/merge_bambu_3mf.py" "$REPO_ROOT/scripts/inspect_3mf_plates.py" "$REPO_ROOT/scripts/review_duplicate_3mf_models.py"
 
 find "$SCRIPTS_DIR" -name "__pycache__" -type d -prune -exec rm -rf {} +

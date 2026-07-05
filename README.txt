@@ -47,10 +47,10 @@ To remove the installed commands and copied scripts:
 
 ./uninstall.sh
 
-Finder Quick Action
--------------------
+Finder Quick Actions
+--------------------
 
-To install a macOS Finder Quick Action for selected 3MF files:
+To install macOS Finder Quick Actions for selected 3MF files:
 
 ./install_finder_service.sh
 
@@ -58,11 +58,16 @@ After installing it, select two or more .3mf files in Finder, Control-click,
 then choose Quick Actions > Merge 3MF Build Plates. The action asks where to
 save the merged 3MF, runs the merge, and reveals the output file in Finder.
 
-The Quick Action registers with Finder for the current system's .3mf content
-type, so it should appear in the Finder contextual menu when all selected files
-are .3mf files. The wrapper still validates the selection before merging.
+You can also select one or more .3mf files, Control-click, then choose Quick
+Actions > Review 3MF Duplicate Models. The action writes a timestamped
+duplicate_model_review_YYYYMMDD_HHMMSS.txt report beside the selected file(s),
+reveals it in Finder, and opens it.
 
-To remove the Finder Quick Action:
+The Quick Actions register with Finder for the current system's .3mf content
+type, so they should appear in the Finder contextual menu when all selected
+files are .3mf files. The wrappers still validate the selection before running.
+
+To remove the Finder Quick Actions:
 
 ./uninstall_finder_service.sh
 
@@ -75,7 +80,7 @@ To build a double-clickable macOS installer package:
 
 The package is written to:
 
-dist/3mf-merge-tools-0.2.0.pkg
+dist/3mf-merge-tools-0.2.1.pkg
 
 The package installs:
 
@@ -84,10 +89,11 @@ The package installs:
 /usr/local/bin/3mf-inspect-plates
 /usr/local/bin/3mf-review-duplicates
 /Library/Services/Merge 3MF Build Plates.workflow
+/Library/Services/Review 3MF Duplicate Models.workflow
 
-This makes the command-line tools and the Finder Quick Action available
+This makes the command-line tools and the Finder Quick Actions available
 system-wide. The postinstall script refreshes the Services menu and updates the
-Finder action to use the current system's .3mf content type.
+Finder actions to use the current system's .3mf content type.
 
 To remove a package install:
 

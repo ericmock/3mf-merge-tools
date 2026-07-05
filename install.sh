@@ -49,6 +49,9 @@ cp "$SCRIPT_DIR/scripts/review_duplicate_3mf_models.py" "$INSTALL_DIR/scripts/re
 if [ -f "$SCRIPT_DIR/scripts/merge_selected_3mf_service.sh" ]; then
     cp "$SCRIPT_DIR/scripts/merge_selected_3mf_service.sh" "$INSTALL_DIR/scripts/merge_selected_3mf_service.sh"
 fi
+if [ -f "$SCRIPT_DIR/scripts/review_selected_3mf_duplicates_service.sh" ]; then
+    cp "$SCRIPT_DIR/scripts/review_selected_3mf_duplicates_service.sh" "$INSTALL_DIR/scripts/review_selected_3mf_duplicates_service.sh"
+fi
 chmod 755 "$INSTALL_DIR/scripts/"*
 
 cat > "$BIN_DIR/3mf-merge" <<EOF
