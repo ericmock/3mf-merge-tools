@@ -91,7 +91,7 @@ To build a double-clickable macOS installer package:
 
 The package is written to:
 
-dist/3mf-merge-tools-0.3.0.pkg
+dist/3mf-merge-tools-0.4.0.pkg
 
 The package installs:
 
