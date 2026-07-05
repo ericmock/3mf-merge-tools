@@ -59,11 +59,29 @@ tmp_parent="${TMPDIR:-/tmp}"
 tmp_parent="${tmp_parent%/}"
 log_file=$(mktemp "$tmp_parent/3mf-deduplicate-ui-service.XXXXXX")
 
+python_app=$("$PYTHON_BIN" - <<'PY'
+from pathlib import Path
+import sys
+
+executable = Path(sys.executable).resolve()
+for parent in (executable, *executable.parents):
+    candidate = parent / "Resources" / "Python.app"
+    if candidate.is_dir():
+        print(candidate)
+        break
+PY
+)
+
+if [ -n "$python_app" ] && /usr/bin/open -n -a "$python_app" --args "$UI_SCRIPT" "${inputs[0]}" >"$log_file" 2>&1; then
+    notify "Opened the 3MF duplicate model editor."
+    exit 0
+fi
+
 /usr/bin/nohup "$PYTHON_BIN" "$UI_SCRIPT" "${inputs[0]}" >"$log_file" 2>&1 &
-ui_pid=$!
+fallback_pid=$!
 sleep 0.5
 
-if kill -0 "$ui_pid" >/dev/null 2>&1; then
+if kill -0 "$fallback_pid" >/dev/null 2>&1; then
     notify "Opened the 3MF duplicate model editor."
     exit 0
 fi
